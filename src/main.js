@@ -1,12 +1,31 @@
-import kaboom from "kaboom"
+import kaboom from "kaboom";
 
-const k = kaboom()
+// Initialize kaboom
+let k = kaboom();
 
-k.loadSprite("bean", "sprites/bean.png")
+// Set gravity
+k.gravity(2400);
 
+// Load the sprite
+k.loadSprite("bean", "sprites/bean.png");
+
+// Add the bean character with the body component for physics
+const bean = k.add([k.sprite("bean"), k.pos(80, 40), k.area(), k.body()]);
+
+// Add ground for the bean to stand on
 k.add([
-	k.pos(120, 80),
-	k.sprite("bean"),
-])
+  k.rect(640, 48),
+  k.pos(0, k.height() - 48),
+  k.outline(4),
+  k.area(),
+  k.body({
+    isStatic: true,
+  }),
+]);
 
-k.onClick(() => k.addKaboom(k.mousePos()))
+// Make the bean jump when the space key is pressed
+k.onKeyPress("space", () => {
+  if (bean.isGrounded()) {
+    bean.jump();
+  }
+});

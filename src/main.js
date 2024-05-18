@@ -1,31 +1,108 @@
 import kaboom from "kaboom";
 
-// Initialize kaboom
+const FLOOR_HEIGHT = 48;
+const JUMP_FORCE = 800;
+const SPEED = 480;
+
+// initialize context
 let k = kaboom();
 
-// Set gravity
-k.gravity(2400);
-
-// Load the sprite
+// load assets
 k.loadSprite("bean", "sprites/bean.png");
 
-// Add the bean character with the body component for physics
-const bean = k.add([k.sprite("bean"), k.pos(80, 40), k.area(), k.body()]);
+scene("game", () => {
+  // define gravity
+  setGravity(1600);
 
-// Add ground for the bean to stand on
-k.add([
-  k.rect(640, 48),
-  k.pos(0, k.height() - 48),
-  k.outline(4),
-  k.area(),
-  k.body({
-    isStatic: true,
-  }),
-]);
+  // add a game object to screen
+  const player = k.add([
+    // list of components
+    sprite("bean"),
+    pos(80, 40),
+    area(),
+    body(),
+  ]);
 
-// Make the bean jump when the space key is pressed
-k.onKeyPress("space", () => {
-  if (bean.isGrounded()) {
-    bean.jump();
+  // floor
+  k.add([
+    rect(width(), FLOOR_HEIGHT),
+    outline(4),
+    pos(0, height()),
+    anchor("botleft"),
+    area(),
+    body({ isStatic: true }),
+    color(127, 200, 255),
+  ]);
+
+  function jump() {
+    if (player.isGrounded()) {
+      player.jump(JUMP_FORCE);
+    }
   }
+
+  // jump when user press space
+  k.onKeyPress("space", jump);
+  k.onClick(jump);
+
+  function spawnTree() {
+    // add tree obj
+    k.add([
+      rect(48, rand(32, 96)),
+      area(),
+      outline(4),
+      pos(width(), height() - FLOOR_HEIGHT),
+      anchor("botleft"),
+      color(255, 180, 255),
+      move(LEFT, SPEED),
+      "tree",
+    ]);
+
+    // wait a random amount of time to spawn next tree
+    k.wait(rand(0.5, 1.5), spawnTree);
+  }
+
+  // start spawning trees
+  spawnTree();
+
+  // lose if player collides with any game obj with tag "tree"
+  player.onCollide("tree", () => {
+    // go to "lose" scene and pass the score
+    go("lose", score);
+    burp();
+    addKaboom(player.pos);
+  });
+
+  // keep track of score
+  let score = 0;
+
+  const scoreLabel = add([text(score), pos(24, 24)]);
+
+  // increment score every frame
+  k.onUpdate(() => {
+    score++;
+    scoreLabel.text = score;
+  });
 });
+
+k.scene("lose", (score) => {
+  k.add([
+    sprite("bean"),
+    pos(width() / 2, height() / 2 - 80),
+    scale(2),
+    anchor("center"),
+  ]);
+
+  // display score
+  k.add([
+    text(score),
+    pos(width() / 2, height() / 2 + 80),
+    scale(2),
+    anchor("center"),
+  ]);
+
+  // go back to game with space is pressed
+  k.onKeyPress("space", () => go("game"));
+  k.onClick(() => go("game"));
+});
+
+k.go("game");
